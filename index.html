@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>俄罗斯方块</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="game-title">
+    <h1>俄罗斯方块</h1>
+    <div class="subtitle">DUNGEON TETRIS</div>
+  </div>
+
+  <div class="game-container">
+    <!-- 左侧面板：操作说明 -->
+    <div class="left-panel">
+      <div class="panel-section">
+        <h3>操作</h3>
+        <div class="key-hints">
+          <div class="key-hint">
+            <span class="key">← →</span>
+            <span class="action">左右移动</span>
+          </div>
+          <div class="key-hint">
+            <span class="key">↑</span>
+            <span class="action">旋转</span>
+          </div>
+          <div class="key-hint">
+            <span class="key">↓</span>
+            <span class="action">加速下落</span>
+          </div>
+          <div class="key-hint">
+            <span class="key">Space</span>
+            <span class="action">硬降</span>
+          </div>
+          <div class="key-hint">
+            <span class="key">P</span>
+            <span class="action">暂停</span>
+          </div>
+          <div class="key-hint">
+            <span class="key">R</span>
+            <span class="action">重开</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 新增：设置区域 (主题切换) -->
+      <div class="panel-section">
+        <h3>设置</h3>
+        <div class="theme-toggle">
+          <span class="theme-label">明亮模式</span>
+          <label class="switch">
+            <input type="checkbox" id="theme-switch">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 游戏面板 -->
+    <div class="game-board">
+      <canvas id="game-canvas"></canvas>
+    </div>
+
+    <!-- 侧栏 -->
+    <div class="side-panel">
+      <!-- 下一个方块预览 -->
+      <div class="panel-section">
+        <h3>下一个</h3>
+        <div class="next-preview">
+          <canvas id="next-canvas"></canvas>
+        </div>
+      </div>
+
+      <!-- 计分板 -->
+      <div class="panel-section">
+        <h3>计分板</h3>
+        <div class="stat-row">
+          <span class="stat-label">得分</span>
+          <span class="stat-value highlight" id="score-value">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">等级</span>
+          <span class="stat-value" id="level-value">1</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">行数</span>
+          <span class="stat-value" id="lines-value">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">最高分</span>
+          <span class="stat-value highlight" id="best-value">0</span>
+        </div>
+      </div>
+
+      <!-- 控制按钮 -->
+      <div class="panel-section controls">
+        <button class="btn" id="btn-start">开始游戏</button>
+        <button class="btn secondary" id="btn-pause" disabled>暂停</button>
+      </div>
+
+      <!-- 排行榜 -->
+      <div class="panel-section">
+        <h3>排行榜</h3>
+        <div id="scores-list">
+          <div class="no-scores">暂无记录</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="game-footer">
+    地下城传奇 &copy; Dungeon Tetris
+  </div>
+
+  <!-- JS模块按依赖顺序加载 -->
+  <script src="js/constants.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/piece.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
