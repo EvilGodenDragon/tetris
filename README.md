@@ -9,7 +9,7 @@
 
 ## 🎮 在线演示
 
-[在线试玩](https://your-github-username.github.io/tetris/) *(请替换为实际的 GitHub Pages 链接)*
+[在线试玩]([https://your-github-username.github.io/tetris/](https://evilgodendragon.github.io/tetris/)) *(请替换为实际的 GitHub Pages 链接)*
 
 ## ✨ 特性
 
