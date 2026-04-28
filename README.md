@@ -17,9 +17,10 @@
 - 🌓 **主题切换**：支持明亮模式和夜间模式，自动保存偏好设置
 - 👻 **幽灵方块**：实时预览方块落点位置
 - 🏆 **排行榜系统**：本地存储历史最高分和游戏记录
-- 📱 **响应式设计**：适配桌面端和移动端设备
+- 📱 **全平台适配**：完美支持桌面端、平板和手机，带触摸控制
 - ⚡ **等级系统**：随消除行数提升难度，下落速度递增
 - 🎨 **精美UI**：现代化界面设计，流畅的动画效果
+- 🔄 **响应式Canvas**：根据屏幕尺寸自动调整游戏区域大小
 
 ## 📸 截图
 
@@ -53,6 +54,8 @@ npx http-server -p 8080
 
 ## 🎮 操作说明
 
+### 桌面端（键盘）
+
 | 按键 | 功能 |
 |------|------|
 | ← → | 左右移动方块 |
@@ -62,6 +65,18 @@ npx http-server -p 8080
 | P | 暂停/继续游戏 |
 | R | 游戏结束后重新开始 |
 | Enter | 快速开始游戏 |
+
+### 移动端（触摸）
+
+在移动设备上会自动显示虚拟控制按钮：
+
+- **←**：左移
+- **→**：右移
+- **↻**：旋转
+- **↓**：加速下落（长按可连续下落）
+- **⤓**：硬降（直接落底）
+
+> 💡 提示：在游戏区域内滑动手势也会被识别，防止页面滚动干扰游戏体验。
 
 ## 📁 项目结构
 
@@ -88,8 +103,74 @@ npx http-server -p 8080
 - **CSS3 Variables**：主题切换实现
 - **Vanilla JavaScript**：游戏逻辑（ES6+）
 - **LocalStorage**：数据持久化
+- **Touch Events**：移动端触摸控制
 
 ### 关键特性实现
+
+#### 响应式设计
+
+采用多断点媒体查询，针对不同设备优化布局：
+
+```css
+/* 平板端 (768px以下) */
+@media (max-width: 768px) {
+  .game-container {
+    flex-direction: column;
+  }
+  
+  /* 隐藏操作说明，节省空间 */
+  .left-panel {
+    display: none;
+  }
+}
+
+/* 手机端 (480px以下) */
+@media (max-width: 480px) {
+  /* 进一步缩小间距和字体 */
+}
+```
+
+#### 动态Canvas缩放
+
+根据屏幕宽度自动计算合适的方块大小：
+
+```javascript
+resizeCanvas() {
+  const viewportWidth = window.innerWidth;
+  let blockSize = BLOCK_SIZE;
+  
+  // 手机端
+  if (viewportWidth <= 480) {
+    blockSize = Math.min(Math.floor(viewportWidth / COLS), 20);
+  }
+  // 平板端
+  else if (viewportWidth <= 768) {
+    blockSize = Math.min(Math.floor(viewportWidth / COLS), 25);
+  }
+  
+  this.canvas.width = COLS * blockSize;
+  this.canvas.height = ROWS * blockSize;
+}
+```
+
+#### 触摸控制
+
+为移动设备添加虚拟按钮和手势支持：
+
+```javascript
+// 检测移动设备
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad/i.test(navigator.userAgent) 
+    || window.innerWidth <= 768 
+    || ('ontouchstart' in window);
+}
+
+// 触摸事件处理
+touchBtn.addEventListener('touchstart', (e) => {
+  e.preventDefault(); // 防止页面滚动
+  game.moveLeft();
+});
+```
 
 #### 主题切换
 通过 CSS 自定义属性（Variables）实现昼夜模式切换：

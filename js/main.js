@@ -21,9 +21,15 @@
     const pauseBtn = $('#btn-pause');
     const scoresListEl = $('#scores-list');
     const themeSwitch = $('#theme-switch');
+    const touchControls = $('#touch-controls');
 
     // 初始化主题
     initTheme(themeSwitch);
+
+    // 检测是否为移动设备，显示触摸控制
+    if (isMobileDevice()) {
+      touchControls.classList.add('visible');
+    }
 
     game = new Game(canvas, nextCanvas);
 
@@ -61,6 +67,9 @@
 
     // 键盘控制
     document.addEventListener('keydown', handleKeyDown);
+
+    // 触摸控制
+    initTouchControls();
 
     function handleKeyDown(e) {
       if (e.key === 'Enter' && (!game.started || game.gameOver)) {
@@ -134,6 +143,99 @@
             </div>`
         )
         .join('');
+    }
+
+    /**
+     * 检测是否为移动设备
+     */
+    function isMobileDevice() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+        || window.innerWidth <= 768 
+        || ('ontouchstart' in window) 
+        || (navigator.maxTouchPoints > 0);
+    }
+
+    /**
+     * 初始化触摸控制
+     */
+    function initTouchControls() {
+      const touchLeft = $('#touch-left');
+      const touchRight = $('#touch-right');
+      const touchRotate = $('#touch-rotate');
+      const touchDown = $('#touch-down');
+      const touchDrop = $('#touch-drop');
+
+      // 防止触摸时页面滚动
+      const preventScroll = (e) => {
+        e.preventDefault();
+      };
+
+      // 左移
+      touchLeft.addEventListener('touchstart', (e) => {
+        preventScroll(e);
+        if (game && game.started && !game.paused && !game.gameOver) {
+          game.moveLeft();
+        }
+      });
+
+      // 右移
+      touchRight.addEventListener('touchstart', (e) => {
+        preventScroll(e);
+        if (game && game.started && !game.paused && !game.gameOver) {
+          game.moveRight();
+        }
+      });
+
+      // 旋转
+      touchRotate.addEventListener('touchstart', (e) => {
+        preventScroll(e);
+        if (game && game.started && !game.paused && !game.gameOver) {
+          game.rotatePiece();
+        }
+      });
+
+      // 加速下落（连续触发）
+      let downInterval = null;
+      touchDown.addEventListener('touchstart', (e) => {
+        preventScroll(e);
+        if (game && game.started && !game.paused && !game.gameOver) {
+          game.moveDown();
+          // 长按连续下落
+          downInterval = setInterval(() => {
+            if (game && game.started && !game.paused && !game.gameOver) {
+              game.moveDown();
+            }
+          }, 100);
+        }
+      });
+
+      touchDown.addEventListener('touchend', (e) => {
+        preventScroll(e);
+        if (downInterval) {
+          clearInterval(downInterval);
+          downInterval = null;
+        }
+      });
+
+      touchDown.addEventListener('touchcancel', (e) => {
+        if (downInterval) {
+          clearInterval(downInterval);
+          downInterval = null;
+        }
+      });
+
+      // 硬降
+      touchDrop.addEventListener('touchstart', (e) => {
+        preventScroll(e);
+        if (game && game.started && !game.paused && !game.gameOver) {
+          game.hardDrop();
+        }
+      });
+
+      // 防止Canvas上的默认触摸行为
+      canvas.addEventListener('touchstart', preventScroll, { passive: false });
+      canvas.addEventListener('touchmove', preventScroll, { passive: false });
+      canvas.addEventListener('touchend', preventScroll, { passive: false });
     }
   }
 

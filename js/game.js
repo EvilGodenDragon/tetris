@@ -10,10 +10,8 @@ class Game {
     this.nextCanvas = nextCanvas;
     this.nextCtx = nextCanvas.getContext('2d');
 
-    this.canvas.width = COLS * BLOCK_SIZE;
-    this.canvas.height = ROWS * BLOCK_SIZE;
-    this.nextCanvas.width = 4 * BLOCK_SIZE;
-    this.nextCanvas.height = 4 * BLOCK_SIZE;
+    // 初始化时设置Canvas尺寸
+    this.resizeCanvas();
 
     this.board = new Board();
     this.currentPiece = null;
@@ -30,6 +28,87 @@ class Game {
 
     this.onScoreUpdate = null;
     this.onGameOver = null;
+
+    // 监听窗口大小变化
+    this.handleResize = () => {
+      const wasStarted = this.started;
+      const wasPaused = this.paused;
+      const wasGameOver = this.gameOver;
+      
+      this.resizeCanvas();
+      
+      // 恢复游戏状态
+      this.started = wasStarted;
+      this.paused = wasPaused;
+      this.gameOver = wasGameOver;
+      
+      // 重新渲染
+      if (this.started) {
+        if (this.gameOver) {
+          this.renderGameOver();
+        } else if (this.paused) {
+          this.renderPauseScreen();
+        } else {
+          this.render();
+        }
+      } else {
+        this.renderWelcome();
+      }
+    };
+    
+    window.addEventListener('resize', this.handleResize);
+  }
+
+  /**
+   * 根据屏幕尺寸动态调整Canvas大小
+   */
+  resizeCanvas() {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // 计算合适的方块大小
+    let blockSize = BLOCK_SIZE;
+    
+    // 手机端 (小于480px)
+    if (viewportWidth <= 480) {
+      // 预留左右边距和控制区域空间
+      const availableWidth = viewportWidth - 20;
+      const maxWidth = Math.min(availableWidth, 300);
+      blockSize = Math.floor(maxWidth / COLS);
+      blockSize = Math.min(blockSize, 20); // 最大不超过20px
+    }
+    // 平板端 (481px - 768px)
+    else if (viewportWidth <= 768) {
+      const availableWidth = viewportWidth - 40;
+      const maxWidth = Math.min(availableWidth, 350);
+      blockSize = Math.floor(maxWidth / COLS);
+      blockSize = Math.min(blockSize, 25); // 最大不超过25px
+    }
+    // 桌面端保持默认
+    else {
+      blockSize = BLOCK_SIZE;
+    }
+    
+    // 确保最小尺寸
+    blockSize = Math.max(blockSize, 12);
+    
+    // 更新全局BLOCK_SIZE（用于后续绘制）
+    window.BLOCK_SIZE_DYNAMIC = blockSize;
+    
+    // 设置Canvas尺寸
+    this.canvas.width = COLS * blockSize;
+    this.canvas.height = ROWS * blockSize;
+    
+    // 下一个方块预览区域
+    this.nextCanvas.width = 4 * blockSize;
+    this.nextCanvas.height = 4 * blockSize;
+  }
+
+  /**
+   * 获取当前使用的方块大小
+   */
+  getBlockSize() {
+    return window.BLOCK_SIZE_DYNAMIC || BLOCK_SIZE;
   }
 
   start() {
@@ -189,6 +268,7 @@ class Game {
 
   drawBoard() {
     const ctx = this.ctx;
+    const blockSize = this.getBlockSize();
     // 从 CSS 变量获取背景色以支持主题切换
     const boardBg = getComputedStyle(document.body).getPropertyValue('--board-bg').trim() || '#0a0a1a';
     const gridColor = getComputedStyle(document.body).getPropertyValue('--panel-border').trim() || 'rgba(255, 255, 255, 0.03)';
@@ -201,7 +281,7 @@ class Game {
     ctx.lineWidth = 0.5;
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
-        ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        ctx.strokeRect(c * blockSize, r * blockSize, blockSize, blockSize);
       }
     }
 
@@ -216,9 +296,10 @@ class Game {
   }
 
   drawBlock(ctx, x, y, colorIndex) {
-    const px = x * BLOCK_SIZE;
-    const py = y * BLOCK_SIZE;
-    const size = BLOCK_SIZE;
+    const blockSize = this.getBlockSize();
+    const px = x * blockSize;
+    const py = y * blockSize;
+    const size = blockSize;
     const inset = 1;
 
     // 发光效果
@@ -246,6 +327,7 @@ class Game {
 
   drawGhost() {
     if (!this.currentPiece) return;
+    const blockSize = this.getBlockSize();
     const ghostY = this.board.getGhostY(this.currentPiece);
     if (ghostY === this.currentPiece.y) return;
 
@@ -254,14 +336,14 @@ class Game {
     for (let r = 0; r < piece.size; r++) {
       for (let c = 0; c < piece.size; c++) {
         if (piece.shape[r][c] !== 0) {
-          const px = (piece.x + c) * BLOCK_SIZE;
-          const py = (ghostY + r) * BLOCK_SIZE;
+          const px = (piece.x + c) * blockSize;
+          const py = (ghostY + r) * blockSize;
           ctx.fillStyle = GLOW_COLORS[piece.shape[r][c]] || 'rgba(255,255,255,0.1)';
-          ctx.fillRect(px + 2, py + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
+          ctx.fillRect(px + 2, py + 2, blockSize - 4, blockSize - 4);
           ctx.strokeStyle = COLORS[piece.shape[r][c]] || '#fff';
           ctx.globalAlpha = 0.3;
           ctx.lineWidth = 1;
-          ctx.strokeRect(px + 2, py + 2, BLOCK_SIZE - 4, BLOCK_SIZE - 4);
+          ctx.strokeRect(px + 2, py + 2, blockSize - 4, blockSize - 4);
           ctx.globalAlpha = 1;
         }
       }
@@ -280,7 +362,8 @@ class Game {
 
   drawNextPiece() {
     const ctx = this.nextCtx;
-    ctx.fillStyle = '#0a0a1a';
+    const boardBg = getComputedStyle(document.body).getPropertyValue('--board-bg').trim() || '#0a0a1a';
+    ctx.fillStyle = boardBg;
     ctx.fillRect(0, 0, this.nextCanvas.width, this.nextCanvas.height);
 
     if (!this.nextPiece) return;
@@ -301,6 +384,7 @@ class Game {
   renderPauseScreen() {
     this.drawBoard();
     const ctx = this.ctx;
+    const blockSize = this.getBlockSize();
     // 使用半透明面板背景色
     const panelBg = getComputedStyle(document.body).getPropertyValue('--panel-bg').trim() || 'rgba(255, 255, 255, 0.03)';
     // 简单的透明度处理，或者直接覆盖
@@ -309,41 +393,49 @@ class Game {
 
     const accentColor = getComputedStyle(document.body).getPropertyValue('--accent-color').trim() || '#f0c060';
     ctx.fillStyle = accentColor;
-    ctx.font = 'bold 28px "Segoe UI", sans-serif';
+    // 根据Canvas大小调整字体
+    const fontSize = Math.max(16, Math.min(28, blockSize * 1.2));
+    ctx.font = `bold ${fontSize}px "Segoe UI", sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText('暂停', this.canvas.width / 2, this.canvas.height / 2 - 10);
 
     const textSecondary = getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#aaa';
     ctx.fillStyle = textSecondary;
-    ctx.font = '16px "Segoe UI", sans-serif';
+    const subFontSize = Math.max(12, Math.min(16, blockSize * 0.7));
+    ctx.font = `${subFontSize}px "Segoe UI", sans-serif`;
     ctx.fillText('按 P 继续', this.canvas.width / 2, this.canvas.height / 2 + 25);
     ctx.textAlign = 'left';
   }
 
   renderGameOver() {
     const ctx = this.ctx;
+    const blockSize = this.getBlockSize();
     ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     ctx.fillStyle = '#ff4444'; // 错误色通常保持红色，或者也可以定义为变量
-    ctx.font = 'bold 32px "Segoe UI", sans-serif';
+    const titleFontSize = Math.max(20, Math.min(32, blockSize * 1.5));
+    ctx.font = `bold ${titleFontSize}px "Segoe UI", sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText('游戏结束', this.canvas.width / 2, this.canvas.height / 2 - 40);
 
     const accentColor = getComputedStyle(document.body).getPropertyValue('--accent-color').trim() || '#f0c060';
     ctx.fillStyle = accentColor;
-    ctx.font = '22px "Segoe UI", sans-serif';
+    const scoreFontSize = Math.max(16, Math.min(22, blockSize * 1));
+    ctx.font = `${scoreFontSize}px "Segoe UI", sans-serif`;
     ctx.fillText(`得分: ${this.score}`, this.canvas.width / 2, this.canvas.height / 2 + 5);
 
     const textSecondary = getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#aaa';
     ctx.fillStyle = textSecondary;
-    ctx.font = '16px "Segoe UI", sans-serif';
+    const hintFontSize = Math.max(12, Math.min(16, blockSize * 0.7));
+    ctx.font = `${hintFontSize}px "Segoe UI", sans-serif`;
     ctx.fillText('按 R 重新开始', this.canvas.width / 2, this.canvas.height / 2 + 45);
     ctx.textAlign = 'left';
   }
 
   renderWelcome() {
     const ctx = this.ctx;
+    const blockSize = this.getBlockSize();
     const boardBg = getComputedStyle(document.body).getPropertyValue('--board-bg').trim() || '#0a0a1a';
     ctx.fillStyle = boardBg;
     ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -351,19 +443,22 @@ class Game {
     // 标题
     const accentColor = getComputedStyle(document.body).getPropertyValue('--accent-color').trim() || '#f0c060';
     ctx.fillStyle = accentColor;
-    ctx.font = 'bold 30px "Segoe UI", sans-serif';
+    const titleFontSize = Math.max(20, Math.min(30, blockSize * 1.5));
+    ctx.font = `bold ${titleFontSize}px "Segoe UI", sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText('俄罗斯方块', this.canvas.width / 2, this.canvas.height / 2 - 40);
 
     const textSecondary = getComputedStyle(document.body).getPropertyValue('--text-secondary').trim() || '#aaa';
     ctx.fillStyle = textSecondary;
-    ctx.font = '16px "Segoe UI", sans-serif';
+    const hintFontSize = Math.max(12, Math.min(16, blockSize * 0.7));
+    ctx.font = `${hintFontSize}px "Segoe UI", sans-serif`;
     ctx.fillText('按 Enter 开始游戏', this.canvas.width / 2, this.canvas.height / 2 + 30);
 
     // 操作说明
     const textMuted = getComputedStyle(document.body).getPropertyValue('--text-muted').trim() || '#666';
     ctx.fillStyle = textMuted;
-    ctx.font = '13px "Segoe UI", sans-serif';
+    const instructFontSize = Math.max(10, Math.min(13, blockSize * 0.6));
+    ctx.font = `${instructFontSize}px "Segoe UI", sans-serif`;
     const instructions = [
       '← → 移动  ↑ 旋转  ↓ 加速',
       '空格 硬降  P 暂停  R 重开',
